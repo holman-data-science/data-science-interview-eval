@@ -1,8 +1,10 @@
-# Statistical Analysis of Sample Data
 <h1 align="center">
+    <br>
+    Holman Data Science Interview
+    <br>
     <img src=".images/data-science.jpeg" alt="Holman Data Science" />
     <br>
-    Holman Data Science
+	Statistical Analysis of Sample Data
     <br>
 </h1>
 
@@ -16,11 +18,12 @@ The evaluation is to be completed in 7 days or less, and will be reviewed via a 
 
 ## Instructions
 1. Create a new branch off `master`
-2. Use the provided [Ford F150 tire repair](./data-f150-tire-repairs.parquet) data to evaluate the pricing information.
+2. Use the provided [Ford F150 tire repair](./data/f150-tire-repairs.parquet) data to evaluate the pricing information.
 3. Use either Python or R to evaluate the data as either a stand-alone application or Jypter Notebook.
-4. Illustrate the Mean, Standard Deviation, and Median of the data set.
-5. Find which prices are outliers and how you determined them to be so.
-6. Determine what should be the expected Ford F150 tire repair part price.
-7. Log the output in whatever fashion you like.
-8. Push commits to the repo as work is completed to illustrate your train of thought.
-9. When finished create a pull request into the `master` branch.
+4. Perform this analysis on the most recent 3 years of data
+5. Illustrate the Mean, Standard Deviation, and Median of the data set.
+6. Find which prices are outliers and how you determined them to be so.
+7. Determine what should be the expected Ford F150 tire repair part price.
+8. Log the output in whatever fashion you like.
+9. Push commits to the repo as work is completed to illustrate your train of thought.
+10. When finished create a pull request into the `master` branch.
