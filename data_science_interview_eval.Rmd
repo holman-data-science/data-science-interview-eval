@@ -1,0 +1,255 @@
+---
+title: "Holman Data Science Interview Statisical Analysis of Sample Data"
+author: "Evelyn Huszar"
+date: "5/17/2023"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+```{r}
+#load necessary libraries
+suppressMessages(library(arrow))
+suppressMessages(library(naniar))
+suppressMessages(library(ggplot2))
+suppressMessages(library(lubridate))
+```
+
+
+```{r}
+#load the dataset
+data = read_parquet("data/f150-tire-repairs.parquet")
+```
+
+
+
+## Analysis on 2021-2023
+
+
+```{r}
+
+# want 3 most resent years
+current_data = data[which(year(data$date) > 2020),]
+
+#add column for month to see any trends
+current_data$month = as.factor(month(current_data$date))
+current_data$year = as.factor(year(current_data$date))
+```
+
+We have information on the cost of tire repair parts and the date each repair occurred for 2017 to 2023, we are interested in exploring the data from the last three years. The part id, make, and model are the same across all repairs from 2021 to 2023. There are 16 different repair descriptions that occur. First we will check for any missing values before continuing analysis
+
+
+```{r}
+#check for any missing values
+vis_miss(current_data)
+```
+Above the plot shows 100% of the data is present and we do not have to remove or impute any data values. Next we will analyze the columns we have that do have unique values.
+
+```{r, hide = TRUE}
+#check if id is unique
+ids = unique(current_data$id)
+unique_ids = length(ids)
+rows = dim(current_data)
+```
+
+```{r, hide = TRUE}
+#rows with same id, commented out to not be included
+
+#for (i in ids){
+#  location = which(current_data$id == i)
+#  if (length(location) > 1){
+#    print(current_data[location,])
+#  }
+#}
+```
+
+Our repair order id's should be the unique identifier, however our current data has 15,650 rows with 15,588 unique ids.  This means that there may be duplicate data.  When looking at rows that have the same id the index levels are different for each row and some have different cost listed, but the rest of the information is the same. For now we will assume these repairs were not duplicated since the index levels are different.  Therefore id and index level together will be treated as the primary key that identifies rows.  We will not be using these columns in analysis since they are unique.
+
+
+
+Next we will look at the different repair descriptions.
+
+```{r}
+#look at observations for different types of repairs
+repairs = unique(current_data$repair_description)
+repair_info  = data.frame('Repair Description' = repairs)
+for (i in 1:length(repairs)){
+  repair_info$Number.of.Repairs[i] = length(which(current_data$repair_description == repairs[i]))
+}
+  
+knitr::kable(repair_info)
+```
+The table above shows most of the repair descriptions are listed as Tire, Radial Lug Tread. Since there are not many repairs classified as the other types this column will not be explored for our analysis since there are few data points.
+
+This just leaves us with date and cost for analysis. We might be interested if there are any time series trends in the cost of tire repairs. First we will explore the distribution of the costs of tire repairs.
+
+```{r, fig.width =20, fig.height=7}
+#distribution of cost for 2021 to 2023
+g1= ggplot(data = current_data, 
+       mapping = aes(x  = cost)) +
+    geom_boxplot(fill="lightblue") + labs(title = "Figure 1: Repair Cost 2021-2023 Boxplot", x = "Cost ($)")+ theme(text = element_text(size = 20)) 
+
+
+g2= ggplot(data = current_data, 
+       mapping = aes(x = cost))  +
+  geom_histogram(color = 'black', fill="lightblue", bins = 100)+labs(title = "Figure 2: Repair Cost 2021-2023 Histogram", x = "Cost ($)")+ theme(text = element_text(size = 20)) + geom_vline(aes(xintercept=mean(cost)),
+            color="blue", linetype="dashed", linewidth = 1)
+gridExtra::grid.arrange(g1,g2,ncol=2)
+
+```
+
+
+
+```{r}
+cost_summary = data.frame("Mean Cost" = round(mean(current_data$cost),2), "Median Cost" = round(median(current_data$cost),2), "Minimum Cost" = min(current_data$cost), "Maximum Cost" = max(current_data$cost) )
+knitr::kable(cost_summary)
+```
+
+Figure 1 and 2 above shows that repair cost is slightly right skewed with many large outliers.  Figure 2 shows that cost is uni-modal with the mean of the costs for the three years being \$236.54 shown in the blue dashed line in Figure 2 and the median is \$232.00. The smallest about a tire repair costed was \$1.00, looking at the data this is one of the rows with a duplicate id. This row might have been an extra charge that should be added to the other repair with the same id if we are given more information about the duplicate id's.  The maximum cost of tire repairs was $1,216.88. 
+
+
+
+```{r, fig.width =30, fig.height = 15}
+#visualize our data
+g1= ggplot(data = current_data, 
+       mapping = aes(x = date, y = cost)) +
+    geom_point(fill="white") + 
+  geom_smooth(method='lm', linewidth= 2) + labs(title = "Figure 3: Repair Cost by Date", x = "Cost ($)", y = "Date")+ theme(text = element_text(size = 20)) 
+
+g2= ggplot(data = current_data, 
+       mapping = aes(x = cost, y = month)) +
+    geom_boxplot(fill="white") + labs(title = "Figure 4: Repair Cost by Month", x = "Cost ($)", y = "Month")+ theme(text = element_text(size = 20))  
+g3 = ggplot(data = current_data, 
+       mapping = aes(x = cost, y = year)) +
+    geom_boxplot(fill="white") + labs(title = "Figure 5: Repair Cost by Year", x = "Cost ($)", y = "Year")+ theme(text = element_text(size = 20))  
+gridExtra::grid.arrange(g1,g2,g3,ncol=3)
+```
+Above shows how cost of tire repairs varies across all three years and by month.  Figure 3 shows there is a slight positive trend (blue) in cost across the years, but the distribution of cost seems to be oscillating around the same area. Figure 4 shows the distribution of cost by months, generally the month a repair occurs does not seem to change the cost as the box plots are centered around the same median. Lastly, Figure 5 shows the distribution of the costs for each year, again showing the slight positive trend as the box plots median is slightly larger as each year increases. We also see in Figure 5 that many of the highest outliers in cost occurred during 2022. 
+
+```{r}
+# Overlaid histograms
+
+ggplot(current_data, aes(x=cost, fill = year, color=year)) +geom_histogram( alpha=0.2, position="identity", bins = 100) + labs(title = "Figure 6: Repair Cost Distribution by Year", x = "Cost ($)", y = "Year")
+  
+```
+
+
+```{r}
+means = data.frame('Year' = c(2021,2022,2023), 'Mean Cost' = c(round(mean(current_data$cost[which(current_data$year == 2021)]),2), round(mean(current_data$cost[which(current_data$year == 2022)]),2), round(mean(current_data$cost[which(current_data$year == 2023)]),2)), 'Median Cost' = c(round(median(current_data$cost[which(current_data$year == 2021)]),2), round(median(current_data$cost[which(current_data$year == 2022)]),2), round(median(current_data$cost[which(current_data$year == 2023)]),2)))
+knitr::kable(means)
+```
+Looking at distribution by year closer we see in Figure 6 that the distributions for cost are similar with the means increasing slightly. There is less data for 2023 since we are only half way through the year.  In the table above we can see the mean and median cost for each year. The mean and median increase the most from 2021 to 2022, and then only increase by about $5.00 from 2022 to 2023. 
+
+
+## Statisticial Summary of All the Data
+
+We will now revisit the entire dataset and look at a statistical summary of all the data. Before preforming analysis again we will check for missing values and ignore features that are either unique or do not have any unique values.
+
+
+```{r}
+#check for any missing values
+vis_miss(data)
+```
+
+Again no data is missing.  We will again assume that id and index level are the primary key and not deal with any duplicate rows in this analysis, however if the rows are duplicate this can make some of the statistics bias. Since we are interested in a numerical summary of the data we will again only focus on cost of tire repairs.
+
+```{r, fig.width =20, fig.height=7}
+#distribution of cost for all years
+g1= ggplot(data = data, 
+       mapping = aes(x  = cost)) +
+    geom_boxplot(fill="lightblue") + labs(title = "Figure 7: Repair Cost Boxplot", x = "Cost ($)")+ theme(text = element_text(size = 20)) 
+
+
+g2= ggplot(data = data, 
+       mapping = aes(x = cost))  +
+  geom_histogram(color = 'black', fill="lightblue", bins = 100)+labs(title = "Figure 8: Repair Cost Histogram", x = "Cost ($)")+ theme(text = element_text(size = 20)) + geom_vline(aes(xintercept=mean(cost)),
+            color="blue", linetype="dashed", linewidth = 1)+ geom_vline(aes(xintercept=mean(cost)+sd(cost)),
+            color="red", linetype="dashed", linewidth = 1)+ geom_vline(aes(xintercept=mean(cost)-sd(cost)),
+            color="red", linetype="dashed", linewidth = 1)
+gridExtra::grid.arrange(g1,g2,ncol=2)
+
+```
+
+
+
+```{r}
+#statistical summary of cost
+cost_summary = data.frame("Mean Cost" = round(mean(data$cost),2), "Median Cost" = round(median(data$cost),2), "Standard Deviation" = round(sd(data$cost),2))
+knitr::kable(cost_summary)
+```
+The mean cost across all seven years of tire parts is \$222.39 which is illustrated by the blue dashed line in Figure 8.  The median is \$219.00 which is illustrated in Figure 7 in the box plot. Lastly, the standard deviation of the cost is \$54.16. This means that we expect to see prices vary by \$108.32 more or less than \$222.39, which is two standard deviations away from the mean.  The dashed lines in red on Figure 8 show \$54.16 away from the mean. 
+
+
+
+## Outliers and Anomalies
+
+To identify outliers we can use the box plot of the cost and look at anything outside of the whiskers which are outliers.
+```{r}
+boxplot(data$cost, xlab = "Cost ($)", horizontal = TRUE, main = "Figure 9: Boxplot of Cost")
+text(x = boxplot.stats(data$cost)$stats, labels = boxplot.stats(data$cost)$stats, y = 1.25, cex = 0.5)
+```
+
+
+```{r}
+low = length(data$cost[which(data$cost <75)])
+high = length(data$cost[which(data$cost > 363.36)])
+```
+
+The lower whisker is at \$75.00 so anything lower it an outlier.  The higher whisker is at \$363.36 anything there after is also an outlier. Therefore anything not between \$75 and \$363.36 are outliers because they are more or less the nearest quartile plus or minus 1.5 times the inner quartile range, so they are far away from where a high percentage of the data is located. There are 55 repairs that have unusually low prices for the repair and 350 repairs that have unusually high prices. There are 405 outliers in the dataset for repair cost.
+
+However, we found in the first section that cost can vary by year. One method we can use to find outliers is to compute the generalized distance for all points. This is a measure of distance between an observation and the overall mean of the repair costs and repair dates, accounting for the distribution and any trends in the data that way we account for inflation as the years increase. We will look at the 405 data points with the highest generalized distance to see if they match our conclusion above.
+
+```{r}
+#add column of data as a numeric value
+data$date_numeric = as.numeric(data$date)
+X = as.matrix(data[,c(2,10)])
+```
+
+
+```{r}
+#calculate generalized distance
+m=apply(X,2,mean)
+gd = array()
+S = cov(X)
+for (i in 1:dim(X)[1]){
+  gd[i] = (t(X[i,]-apply(X,2,mean)))%*%solve(S)%*%(X[i,]-apply(X,2,mean))
+}
+```
+
+
+
+```{r}
+#plot 10 largest distance
+plot(data$date, data$cost, main = "Figure 10: Repair Cost vs Repair Date", xlab = "Date", ylab = "Cost ($)", pch=20, cex = 0.3)
+points(data[which(gd > sort(gd)[29040]),c(10,2)], col = 'red', pch = 8, cex =1)
+points(m[2],m[1], col = 'blue', pch = 8, cex=2)
+legend('topleft',c("Points with Highest Generalized Distance", "Mean"),col=c("red","blue"),pch=c(8,8))
+abline(h = 75, col = 'green', cex = 2)
+abline(h = 363.36, col = 'purple', cex = 2)
+
+```
+
+
+Figure 10 above shows the scatter plot of cost versus data. The points in red are the points that have the furthest generalized distance away from the mean.  The purple line is at \$363.36 and the green line is at \$75.00.  We see that in earlier years are outliers are less than the outliers we found from the box plot with some red points below the purple line. Towards 2023 our lower outliers are above green line. This shows as years increase what we consider an outlier increases as well. Thus the prices that are outliers may dependent on the year. In 2017 and 2018 outliers are costs that are more than \$335 and less than about \$75, while in 2023 outliers are costs that are more than \$363.36 and less than about \$100.
+
+## Expected Repair Price
+
+Lastly, since we know what prices are not expected, we want to know what prices should be expected for Ford F150 repairs. Because we found the data is skewed with more outliers that are higher than expected we will use the median of the cost as our expected value.  Also since we found that the prices slowing increase by year we will also look at the median by year.
+
+```{r}
+medians = data.frame(
+  "Year" = c("All", 2017,2018,2019,2020,2021,2022,2023), 
+  "Expected Price" = c(round(median(data$cost),2), round(median(data$cost[which(data$year == 2017)]),2), round(median(data$cost[which(data$year == 2018)]),2), round(median(data$cost[which(data$year == 2019)]),2), round(median(data$cost[which(data$year == 2020)]),2), round(median(data$cost[which(data$year == 2021)]),2), round(median(data$cost[which(data$year == 2022)]),2), round(median(data$cost[which(data$year == 2023)]),2))
+)
+knitr::kable(medians)
+```
+The expected value of repair part price for all seven years is \$219.00.  However for this year the expected repair part price is \$247.10.  The table above shows the expected price in dollars for all seven years. 
+
+
+
+
+
+
