@@ -21,7 +21,7 @@ suppressMessages(library(lubridate))
 
 ```{r}
 #load the dataset
-data = read_parquet("f150-tire-repairs.parquet")
+data = read_parquet("data/f150-tire-repairs.parquet")
 ```
 
 
