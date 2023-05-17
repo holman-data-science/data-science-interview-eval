@@ -20,7 +20,7 @@ The evaluation is to be completed in 7 days or less, and will be reviewed via a 
 1. Fork this repository into your own repository
 2. Create a new branch off `master` and call it whatever `usercase-<your first name>`
 3. Use the provided [Ford F150 tire repair](./data/f150-tire-repairs.parquet) data to evaluate the pricing information.
-4. Use either Python or R to evaluate the data as either a stand-alone application or Jypter Notebook.
+4. Use either Python or R to evaluate the data as either a stand-alone application, Rmarkdown or Jypter Notebook.
 5. Perform this analysis on the most recent 3 years of data
 6. Illustrate the Mean, Standard Deviation, and Median of the data set.
 7. Find which prices are outliers and how you determined them to be so.
