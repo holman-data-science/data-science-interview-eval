@@ -144,7 +144,7 @@ knitr::kable(means)
 Looking at distribution by year closer we see in Figure 6 that the distributions for cost are similar with the means increasing slightly. There is less data for 2023 since we are only half way through the year.  In the table above we can see the mean and median cost for each year. The mean and median increase the most from 2021 to 2022, and then only increase by about $5.00 from 2022 to 2023. 
 
 
-## Staticial Summary of All the Data
+## Statisticial Summary of All the Data
 
 We will now revisit the entire dataset and look at a statistical summary of all the data. Before preforming analysis again we will check for missing values and ignore features that are either unique or do not have any unique values.
 
