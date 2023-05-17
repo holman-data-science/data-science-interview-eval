@@ -28,3 +28,4 @@ The evaluation is to be completed in 7 days or less, and will be reviewed via a 
 9. Log the output in whatever fashion you like.
 10. Push commits to the repo as work is completed to illustrate your train of thought.
 11. When finished create a pull request into the `master` branch.
+12. Reply all to the assessment email and add a link to the pull request.
